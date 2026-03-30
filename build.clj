@@ -3,8 +3,8 @@
    [clojure.tools.build.api :as b]
    [deps-deploy.deps-deploy :as dd]))
 
-(def lib 'org.pinkgorilla/flowy)
-(def version (format "0.1.%s" (b/git-count-revs nil)))
+(def lib 'org.pinkgorilla/clj-service-flowy)
+(def version (format "0.2.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
@@ -21,9 +21,9 @@
     [:developer
      [:name "pink-gorilla"]]]
    [:scm
-    [:url "https://github.com/pink-gorilla/flowy"]
-    [:connection "scm:git:git://github.com/pink-gorilla/flowy.git"]
-    [:developerConnection "scm:git:ssh://git@github.com/pink-gorilla/flowy.git"]]])
+    [:url "https://github.com/pink-gorilla/clj-service-flowy"]
+    [:connection "scm:git:git://github.com/pink-gorilla/clj-service-flowy.git"]
+    [:developerConnection "scm:git:ssh://git@github.com/pink-gorilla/clj-service-flowy.git"]]])
 
 
 (def opts {:class-dir class-dir

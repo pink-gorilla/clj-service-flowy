@@ -9,7 +9,9 @@
    [missionary.core :as m]
    [ring.util.response :as response]
    [ring.websocket :as ws]
-   [transit.io :as io])
+   [transit.io :as io]
+   [flowy.reflower :refer [start-reflower]]
+   )
   (:import missionary.Cancelled))
 
 (def ELECTRIC-CONNECTION-TIMEOUT
@@ -242,10 +244,10 @@
 
 (defn flowy-handler-ws [req]
   (if (ws/upgrade-request? req)
-    (ring-ws-handler req (get-in req [:ctx :flowy]))
+    (ring-ws-handler req start-reflower)
     (not-found-handler req)))
 
 (defn flowy-handler-ws2 [req]
   (if (ws/upgrade-request? req)
-    (ring-ws-handler req (get-in req [:ctx :flowy]))
+    (ring-ws-handler req start-reflower)
     req))

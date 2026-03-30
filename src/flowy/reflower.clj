@@ -1,11 +1,10 @@
 (ns flowy.reflower
   (:require
-    [taoensso.timbre :refer [debug debugf info infof warn error]]
+   [taoensso.timbre :refer [info]]
    [missionary.core :as m]
    [tick.core :as t]
-   [human-id.core :refer [human-id]]
-   [clj-service.core :as exec]
-   ;[flowy.executor :as exec]
+   [clj-service.core :refer [call-fn get-service]]
+   [clj-service.executor :refer [execute-wrapped]]
    [flowy.log :as l])
   (:import
    [missionary Cancelled]
@@ -22,31 +21,15 @@
                         (.format rfc-1123-formatter))]
     (str name "=" value "; expires=" expiry-date "; path=/;")))
 
-(defn start-sp [logger write service {:keys [id] :as clj-call}]
+(defn run-sp-clj [logger write ctx setup {:keys [id] :as clj-call}]
   (m/sp
-   (try
-     (l/log logger "start-sp:" clj-call)
-     (let [v (exec/call-fn service clj-call)]
-       ; success case
-       (m/? (write {:op :exec :id id :val (m/? v)})))
-     (catch Exception ex
-       (m/? (write {:op :exec :id id :err (ex-message ex)}))))))
-
-(defn start-clj [logger write service {:keys [id] :as clj-call}]
-  (m/sp
-   (try
-     (l/log logger "start-clj:" clj-call)
-     (let [v (m/via m/cpu (exec/call-fn service clj-call))]
-      ; success case
-       (m/? (write {:op :exec
-                    :id id
-                    :val (m/? v)})))
-     (catch Exception ex
-       (m/? (write {:op :exec :id id :err (ex-message ex)}))))))
+   (l/log logger "start-sp:" clj-call)
+   (let [v (m/? (execute-wrapped ctx setup clj-call))]
+     (m/? (write (assoc v :op :exec :id id))))))
 
 (defn start-ap [logger write service {:keys [id] :as clj-call}]
   (l/log logger "start-ap:" clj-call)
-  (when-let [f (exec/call-fn service clj-call)]
+  (when-let [f (call-fn service clj-call)]
     (m/reduce (fn [_s v]
                 (try
                   (m/? (write {:op :exec
@@ -58,21 +41,20 @@
 
 (defn start-executing
   "returns a missionary task which can execute the clj-call"
-  [logger write {:keys [mode] :as service} {:keys [id] :as clj-call}]
+  [logger write ctx setup {:keys [mode] :as service} {:keys [id] :as clj-call}]
   (case mode
-    :sp (start-sp logger write service clj-call)
+    ; task-once for :sp/:clj
+    :sp (run-sp-clj logger write ctx setup clj-call)
+    :clj (run-sp-clj logger write ctx setup clj-call)
+    ; flow consumer for :ap
     :ap (start-ap logger write service clj-call)
-    :clj (start-clj logger write service clj-call)
-    ; default :clj
-    (start-clj logger write service clj-call)))
+    (throw (ex-info (str "unknown mode: " mode) clj-call))))
 
-(defn start-reflower [exs]
-  (fn [ring-req]
-    ;(println "flomaysta: a")
-    ;(println "a: " a)
-    (info "reflower client wants to connect with ring-req: " (keys ring-req))
-    (let [browser-id (or (:browser-id ring-req) (human-id))
-          logger (l/create-logger browser-id)]
+(defn start-reflower [{:keys [identity browser-id ctx] :as req}]
+    (info "reflower client wants to connect with ring-req: " (keys req))
+    (let [setup {:user identity :session browser-id}
+          logger (l/create-logger browser-id)
+          clj (:clj ctx)]
       (l/log logger "\n\nsession started: " browser-id)
       (fn [write read]
         (let [msg-in (m/stream
@@ -99,8 +81,8 @@
                               (l/log logger "ignoring msg without op: " msg)
 
                               :exec
-                              (if-let [s (exec/get-service exs msg)]
-                                (if-let [t (start-executing logger write s msg)]
+                              (if-let [s (get-service clj msg)]
+                                (if-let [t (start-executing logger write ctx setup s msg)]
                                   (add-task id (t
                                                 (fn [r]
                                                   (l/log logger "task" msg "completed: " r)
@@ -143,7 +125,7 @@
                (l/log logger "reflower got cancelled.")
                (cancel-all)
              ;(m/? shutdown!)
-               true))))))))
+               true)))))))
 
 (comment
   (cookie-string "a" "1")

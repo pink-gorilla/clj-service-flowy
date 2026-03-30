@@ -1,6 +1,7 @@
 (ns flowy.reflower
   (:require
    [missionary.core :as m]
+   [taoensso.timbre :refer [debug debugf info infof warn error]]
    [flowy.client :refer [boot-with-retry connector]])
   (:import missionary.Cancelled))
 
@@ -8,24 +9,24 @@
 (def in-mbx (m/mbx))
 
 (defn set-cookie [{:keys [cookie message]}]
-  (println "message: " message)
+  (info "message: " message)
   (when cookie
-    (println "setting cookie: " cookie)
+    (info "setting cookie: " cookie)
     (set! (.-cookie js/document) cookie)))
 
 (defn conn-interactor [write read]
   ; this fn gets called whenever the connection is established.
-  (println "conn-interactor ws established")
+  (info "conn-interactor ws established")
   (let [msg-in (m/stream
                 (m/observe read))
         send-msg (m/sp
                   (loop [v (m/? out-mbx)]
-                    (println "interactor send: " v)
+                    (info "interactor send: " v)
                     (m/? (write v))
                     (recur (m/? out-mbx))))
         process-msg (m/reduce
                      (fn [_ msg]
-                       (println "interactor rcvd: " msg)
+                       (info "interactor rcvd: " msg)
                        ; {:val true-queen-8, :cookie flowy-browser-id=true-queen-8; expires=Sat, 31 Mar 2035 01:08:34 GMT; path=/;, :op :message}
                        (when (= :message (:op msg))
                          (set-cookie msg))
@@ -35,19 +36,19 @@
      (try
        (m/? (write {:op :message :val "browser-ws-connected"}))
        (m/? (m/join vector process-msg send-msg))
-       (println "wsconninteractor DONE! success!")
+       (info "wsconninteractor DONE! success!")
        (catch js/Exception ex
-         (println "wsconninteractor crashed: " ex))
+         (info "wsconninteractor crashed: " ex))
        (catch Cancelled _
-         (println "wsconninteractor was cancelled.")
+         (info "wsconninteractor was cancelled.")
              ;(m/? shutdown!)
          true)))))
 
 (defn create-multiplexer []
   (let [req-id (atom 0)
         dispose! ((boot-with-retry conn-interactor connector)
-                  #(println "multiplexer finished success:" %)
-                  #(println "multiplexer finished error:" %))
+                  #(info "multiplexer finished success:" %)
+                  #(info "multiplexer finished error:" %))
         msg-flow (m/stream
                   (m/ap
                    (loop [msg (m/? in-mbx)]
@@ -68,7 +69,7 @@
         msg* (merge msg
                     {:op :exec
                      :id id})]
-    (println "making request: " msg*)
+    (info "making request: " msg*)
     (out-mbx msg*)))
 
 (def mx (create-multiplexer))
@@ -93,17 +94,16 @@
                              (take 1)
                              (:msg-flow mx))]
       ; first send the message
-     (println "making req: " msg)
+     (info "making req: " msg)
      (out-mbx msg)
-     (println "req sent!")
+     (info "req sent!")
       ; wait until msg received
      (let [msgs (m/? (m/reduce conj [] first-result-msg-f))
-           {:keys [val err] :as full} (first msgs)]
-       (if val
-         val
-         (throw (ex-info (str "server error " err) {:fun fun
-                                                    :args args
-                                                    :message err})))
+           {:keys [result error] :as full} (first msgs)]
+       (info "full result:" full)
+       (if result
+         result
+         (throw (ex-info (:message error) (or (:data error) {}))))
         ;(println "task msg: " full)
        )
       ;(m/? (m/sleep 10000))
@@ -133,9 +133,9 @@
          ;                   result-msg-f)
          ]
       ; first send the message
-     (println "making req: " msg)
+     (info "making req: " msg)
      (out-mbx msg)
-     (println "req sent!")
+     (info "req sent!")
       ; wait until msg received
      ;(loop [msg (m/? result-msg-f)]
      ;  (m/amb (:val msg) (recur (m/? in-mbx))))
@@ -143,7 +143,7 @@
      (try (let [msg (m/?> result-msg-f)]
             (m/amb (:val msg)))
           (catch Cancelled c
-            (println "unsubscribing flow!")
+            (info "unsubscribing flow!")
             (out-mbx {:op :cancel
                       :id id})
             (throw c))))))

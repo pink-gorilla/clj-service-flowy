@@ -1,13 +1,12 @@
 {:paths ["src"]
  :deps {org.clojure/clojure    {:mvn/version "1.12.4"}
         org.pinkgorilla/ui-router {:mvn/version "0.3.46"}
-        org.pinkgorilla/webly {:mvn/version "0.20.733"} ; build tool
-        org.pinkgorilla/shadow-x {:mvn/version "0.3.22"} ; newer version (contained in webly)
+        org.pinkgorilla/webly {:mvn/version "0.20.736"} ; build tool
         demo/demo {:local/root "../demo" :deps/manifest :deps}
         }
  :aliases
  {; BUILD (then exit)
-  :build {:exec-fn webly.spa/webly-build
+  :npm-install {:exec-fn webly.spa/webly-build
           :exec-args {:config ["demo-config.edn"]
                       :profile "npm-install"}}
 

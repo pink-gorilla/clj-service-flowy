@@ -20,8 +20,7 @@
   :webly {:start (webly.spa/start-webly
                   {:exts (clip/ref :exts)
                    :ctx {:token (clip/ref :token)
-                         :clj (clip/ref :clj)
-                         :flowy (flowy.reflower/start-reflower (clip/ref :clj))}}
+                         :clj (clip/ref :clj)}}
                   (clip/ref :config)
                   (:profile #ref [:modular])
                   (:version #ref [:modular]))

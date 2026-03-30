@@ -7,7 +7,7 @@
  ; runtime
  :cljs-service {:config-fn flowy.config/config-flowy ; build flowy config
                 :start-fn flowy.config/start-flowy-service} ; configure flowy
- 
+
  :web/routes [["/flowy" {:handler flowy.ring-adapter/flowy-handler-ws
                          :middleware [ring.middleware.cookies/wrap-cookies
                                       muuntaja.middleware/wrap-format
@@ -15,8 +15,4 @@
                                       token.identity.local/identity-middleware
                                       webserver.middleware.ctx/ctx-middleware
                                       webserver.middleware.api/wrap-api-handler]
-                         :services #{:token :clj :flowy}}]]}
-
-
-
-
+                         :services #{:token :clj}}]]}

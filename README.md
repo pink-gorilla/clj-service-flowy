@@ -1,4 +1,4 @@
-# flowy [![GitHub Actions status |pink-gorilla/flowy](https://github.com/pink-gorilla/flowy/workflows/CI/badge.svg)](https://github.com/pink-gorilla/flowy/actions?workflow=CI)[![Clojars Project](https://img.shields.io/clojars/v/org.pinkgorilla/flowy.svg)](https://clojars.org/org.pinkgorilla/flowy)
+# clj-service-flowy [![GitHub Actions status |pink-gorilla/clj-service-flowy](https://github.com/pink-gorilla/clj-service-flowy/workflows/CI/badge.svg)](https://github.com/pink-gorilla/clj-service-flowy/actions?workflow=CI)[![Clojars Project](https://img.shields.io/clojars/v/org.pinkgorilla/clj-service-flowy.svg)](https://clojars.org/org.pinkgorilla/clj-service-flowy)
 
 
 stage: totally experimental
@@ -6,10 +6,10 @@ stage: totally experimental
 Goal: Make it easier to build reactive web applications in clojure/clojurescript.
 
 There is hyperfiddle electric, which is amazing, and you should use it,
-but if you cannot, then flowy could be a good start. We stole the websocket part
+but if you cannot, then clj-service-flowy could be a good start. We stole the websocket part
 of electric as base.
 
-Flowy allows to expose clojure functions to a browser via websocket,
+clj-service-flowy allows to expose clojure functions to a browser via websocket,
 and for browser-ui to use them.
 
 Exposed functions can
@@ -23,7 +23,7 @@ on the server.
 
 # Reagent integration
 
-flowy.reagent/flow->ratom can be used in a reagent.core/with-let. It
+clj-service-flowy.reagent/flow->ratom can be used in a reagent.core/with-let. It
 gets 2 parameters: 1. the flow and 2. the initial value, It retruns
 [flow-state-a dispose!].  The dispose! function needs to be used in the 
 finally section of the with-let. flow-state-a is a normal reagent atom.
@@ -41,7 +41,7 @@ Open Browser on localhost:9000
 
 # Pitch/UIX integration
 
-flowy.uix/use-flow is a react hook that returns the current value of a flow,
+clj-service-flowy.uix/use-flow is a react hook that returns the current value of a flow,
 its parameters are 1. the flow and 2. the initial value that should be returned
 before the flow returns something.
 
